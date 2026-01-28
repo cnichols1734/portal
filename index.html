@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cnichols1734 - GitHub Pages Portal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #c33;
+        }
+
+        .projects {
+            display: grid;
+            gap: 20px;
+        }
+
+        .project-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid transparent;
+            display: block;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-color: #667eea;
+        }
+
+        .project-card h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .project-card p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .project-url {
+            font-size: 0.9em;
+            color: #888;
+            font-family: monospace;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .stats span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .no-pages {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .project-card {
+                padding: 20px;
+            }
+
+            .stats {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 cnichols1734</h1>
+        <p class="subtitle">GitHub Pages Portal - Auto-Discovered Projects</p>
+
+        <div id="projects-container">
+            <div class="loading">Loading GitHub Pages sites</div>
+        </div>
+
+        <footer>
+            <p>View all repositories on <a href="https://github.com/cnichols1734" target="_blank">GitHub @cnichols1734</a></p>
+            <p style="margin-top: 10px; font-size: 0.8em;">Auto-updated from GitHub API</p>
+        </footer>
+    </div>
+
+    <script>
+        const GITHUB_USERNAME = 'cnichols1734';
+        const GITHUB_API = 'https://api.github.com';
+
+        async function fetchGitHubPages() {
+            const container = document.getElementById('projects-container');
+            
+            try {
+                // Fetch all repositories
+                const reposResponse = await fetch(`${GITHUB_API}/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`);
+                if (!reposResponse.ok) {
+                    throw new Error(`GitHub API error: ${reposResponse.status}`);
+                }
+                
+                const repos = await reposResponse.json();
+                
+                // Filter repos that have GitHub Pages enabled
+                const pagesRepos = [];
+                
+                for (const repo of repos) {
+                    // Check if repo has pages enabled
+                    try {
+                        const pagesResponse = await fetch(`${GITHUB_API}/repos/${GITHUB_USERNAME}/${repo.name}/pages`, {
+                            headers: {
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        });
+                        
+                        if (pagesResponse.ok) {
+                            const pagesData = await pagesResponse.json();
+                            pagesRepos.push({
+                                name: repo.name,
+                                description: repo.description || 'No description provided',
+                                url: pagesData.html_url || `https://${GITHUB_USERNAME}.github.io/${repo.name}/`,
+                                stars: repo.stargazers_count,
+                                language: repo.language,
+                                updated: new Date(repo.updated_at)
+                            });
+                        }
+                    } catch (e) {
+                        // Repo doesn't have pages enabled, skip it
+                        continue;
+                    }
+                }
+                
+                displayProjects(pagesRepos);
+                
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error">
+                        <strong>Error loading GitHub Pages:</strong><br>
+                        ${error.message}<br><br>
+                        <small>The GitHub API may be rate-limited. Try again in a few minutes.</small>
+                    </div>
+                `;
+            }
+        }
+
+        function displayProjects(projects) {
+            const container = document.getElementById('projects-container');
+            
+            if (projects.length === 0) {
+                container.innerHTML = `
+                    <div class="no-pages">
+                        <p>No GitHub Pages sites found yet.</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">Enable GitHub Pages in your repository settings to see them here!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const projectsHTML = projects.map(project => {
+                const icon = getIconForProject(project.name);
+                const langBadge = project.language ? `<span>📝 ${project.language}</span>` : '';
+                const starBadge = project.stars > 0 ? `<span>⭐ ${project.stars}</span>` : '';
+                
+                return `
+                    <a href="${project.url}" class="project-card" target="_blank" rel="noopener">
+                        <h2>${icon} ${formatRepoName(project.name)}</h2>
+                        <p>${project.description}</p>
+                        <p class="project-url">${project.url.replace('https://', '')}</p>
+                        <div class="stats">
+                            ${langBadge}
+                            ${starBadge}
+                            <span>🕒 Updated ${formatDate(project.updated)}</span>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+            
+            container.innerHTML = `<div class="projects">${projectsHTML}</div>`;
+        }
+
+        function getIconForProject(name) {
+            const lowerName = name.toLowerCase();
+            if (lowerName.includes('workout') || lowerName.includes('fitness')) return '💪';
+            if (lowerName.includes('sudoku') || lowerName.includes('game')) return '🎮';
+            if (lowerName.includes('portal') || lowerName.includes('hub')) return '🌐';
+            if (lowerName.includes('blog') || lowerName.includes('post')) return '📝';
+            if (lowerName.includes('app')) return '📱';
+            if (lowerName.includes('web')) return '🌍';
+            return '🔗';
+        }
+
+        function formatRepoName(name) {
+            // Convert repo-name or repo_name to "Repo Name"
+            return name
+                .split(/[-_]/)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
+        function formatDate(date) {
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'today';
+            if (diffDays === 1) return 'yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+            if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+            return `${Math.floor(diffDays / 365)} years ago`;
+        }
+
+        // Load projects when page loads
+        document.addEventListener('DOMContentLoaded', fetchGitHubPages);
+    </script>
+</body>
+</html>
