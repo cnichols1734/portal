@@ -192,8 +192,6 @@
             const container = document.getElementById('projects-container');
             
             try {
-                // Fetch all repositories (handles up to 100 repos - GitHub API limit per page)
-                // Note: If you have more than 100 repos, implement pagination
                 const reposResponse = await fetch(`${GITHUB_API}/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`);
                 if (!reposResponse.ok) {
                     throw new Error(`GitHub API error: ${reposResponse.status}`);
@@ -201,36 +199,20 @@
                 
                 const repos = await reposResponse.json();
                 
-                // Check all repos for GitHub Pages in parallel (much faster than sequential)
-                const pagesChecks = repos.map(async (repo) => {
-                    try {
-                        const pagesResponse = await fetch(`${GITHUB_API}/repos/${GITHUB_USERNAME}/${repo.name}/pages`, {
-                            headers: {
-                                'Accept': 'application/vnd.github+json'
-                            }
-                        });
-                        
-                        if (pagesResponse.ok) {
-                            const pagesData = await pagesResponse.json();
-                            return {
-                                name: repo.name,
-                                description: repo.description || 'No description provided',
-                                url: pagesData.html_url || `https://${GITHUB_USERNAME}.github.io/${repo.name}/`,
-                                stars: repo.stargazers_count,
-                                language: repo.language,
-                                updated: new Date(repo.updated_at)
-                            };
-                        }
-                        return null;
-                    } catch (e) {
-                        // Repo doesn't have pages enabled or other error - skip it
-                        console.debug(`Skipping ${repo.name}:`, e.message);
-                        return null;
-                    }
-                });
-                
-                const results = await Promise.all(pagesChecks);
-                const pagesRepos = results.filter(repo => repo !== null);
+                // Filter repos that have GitHub Pages enabled using has_pages property
+                const pagesRepos = repos
+                    .filter(repo => repo.has_pages)
+                    .map(repo => ({
+                        name: repo.name,
+                        description: repo.description || 'No description provided',
+                        // Construct the GitHub Pages URL
+                        url: repo.name === `${GITHUB_USERNAME}.github.io` 
+                            ? `https://${GITHUB_USERNAME}.github.io/`
+                            : `https://${GITHUB_USERNAME}.github.io/${repo.name}/`,
+                        stars: repo.stargazers_count,
+                        language: repo.language,
+                        updated: new Date(repo.updated_at)
+                    }));
                 
                 displayProjects(pagesRepos);
                 
